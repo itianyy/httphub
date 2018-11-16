@@ -10,8 +10,8 @@
 #include <arpa/inet.h>
 #include <netdb.h> 
 #define DEST_PORT 80
-#define DEST_IP_ADDR "10.0.9.139"
-#define DEST_IP_BY_NAME "demo.git.com"
+//#define DEST_IP_ADDR "10.0.9.139"
+#define DEST_IP_BY_NAME "zongxiaodong.cn"
 
 
 void process_info(int fd)
@@ -24,12 +24,12 @@ void process_info(int fd)
     {
         printf("begin send\n");
         memset(str1,0,4096);
-        strcat(str1, "POST http://demo.git.com/sum.php HTTP/1.1\r\n");
-        strcat(str1,"Host: demo.git.com\r\n");
-        strcat(str1,"Content-Length: 65\r\n");
+        strcat(str1, "POST http://www.zongxiaodong.cn/receiver.php HTTP/1.1\r\n");
+        strcat(str1,"Host: zongxiaodong.cn\r\n");
+        strcat(str1,"Content-Length: 15\r\n");
         strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
         strcat(str1,"\r\n");
-        strcat(str1,"mathod=adb_signe&token=0E1FEECD0EE54E3B8568A536A7036D78B1AC7EEE");
+        strcat(str1,"data=0123456789");
         strcat(str1,"\r\n\r\n");
         printf("str1 = %s\n",str1);
         send_num = send(fd, str1,strlen(str1),0);
