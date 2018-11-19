@@ -170,7 +170,7 @@ int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int
     //strcat(str1,"Content-Length: 15\r\n");
     //
     toStr(value,length,temp);
-    sprintf(str1+strlen(str1),"Content-Length: %d\r\n",strlen(temp));
+    sprintf(str1+strlen(str1),"Content-Length: %d\r\n",strlen(temp)+strlen(key)+1);
     //
     strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
     strcat(str1,"\r\n");
