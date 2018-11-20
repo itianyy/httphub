@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
+//
+#include <telink_usb.h>
+//
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -209,6 +213,126 @@ int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int
     
 }
 
+//begin
+int exchange_str(int fd,char *url,char *host_name,char *key,char *temp,char *recv_buf,int recv_buf_len)
+{
+	int send_num;
+    char str1[4096];
+    //char temp[1024];
+    
+    
+    printf("begin send:\n");
+    memset(str1,0,4096);
+    memset(temp,0,1024);
+    //strcat(str1, "POST http://www.zongxiaodong.cn/receiver.php HTTP/1.1\r\n");
+    //
+    strcat(str1, "POST ");
+    strcat(str1, url);
+    strcat(str1, " HTTP/1.1\r\n");
+    //
+    //strcat(str1,"Host: zongxiaodong.cn\r\n");
+    //
+    strcat(str1,"Host: ");
+    strcat(str1,host_name);
+    strcat(str1,"\r\n");
+    //
+    //strcat(str1,"Content-Length: 15\r\n");
+    //
+    //toStr(value,length,temp);
+    sprintf(str1+strlen(str1),"Content-Length: %d\r\n",strlen(temp)+strlen(key)+1);
+    //
+    strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
+    strcat(str1,"\r\n");
+    //strcat(str1,"data=0123456789");
+    //
+    strcat(str1,key);
+    strcat(str1,"=");
+    strcat(str1,temp);
+    //
+    strcat(str1,"\r\n\r\n");
+    
+    
+    printf("%s\n",str1);
+    
+    send_num = send(fd, str1,strlen(str1),0);
+    if (send_num < 0)
+    {
+        perror("send error\n");
+        return -1;
+    }
+    else
+    {
+
+    	printf("send successful\n");
+    	printf("begin recv:\n");
+    	
+    	int recv_num = recv(fd,recv_buf,recv_buf_len,0);
+    	if(recv_num < 0){
+        	perror("recv error\n");
+        	return -1;
+    	} else {
+            printf("recv successful\n");
+            return recv_num;
+        }
+    }
+    
+}
+
+//end
+
+#define    RESU_BUF_ADDR    0X800a
+#define    RESU_BUF_READY   0X800c
+#define    RESU_BUF_LENGTH  0X800e
+
+unsigned char my_read_reg8(libusb_device_handle  *dev_handle,uint16_t addr)
+{
+	unsigned char data;
+	telink_usb_r_mem(dev_handle, addr, &data, 1);
+	return data;
+}
+
+unsigned short ResuBuf_GetAddr(libusb_device_handle  *dev_handle)
+{
+    unsigned short address;
+    telink_usb_r_mem(dev_handle,RESU_BUF_ADDR , &address, 2);
+    return address;
+}
+
+void ResuBuf_reset(libusb_device_handle  *dev_handle)
+{
+	unsigned char buf[2] = {0,0};
+    telink_usb_w_mem(dev_handle, RESU_BUF_LENGTH, buf, 2);//length
+    telink_usb_w_mem(dev_handle, RESU_BUF_READY, buf, 1);//ready
+}
+
+int ResuBuf_isReady(libusb_device_handle  *dev_handle)
+{
+    unsigned char ready = my_read_reg8(dev_handle,RESU_BUF_READY);
+    return ready;
+}
+
+int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsigned char *out,unsigned int out_buf_len)
+{
+	while(1)
+	{
+		if(ResuBuf_isReady(dev_handle))
+		{
+			unsigned short length;
+			telink_usb_r_mem(dev_handle,RESU_BUF_LENGTH , &length, 2);
+			if(length > out_buf_len)
+			{
+				length = out_buf_len;
+			}
+			telink_usb_r_mem(dev_handle,addr , out, length);
+			ResuBuf_reset(dev_handle);
+			return length;
+		}else
+		{
+			usleep(100000);//100ms
+		}
+	}
+}
+
 #define PORT 80
 #define HOST_NAME "zongxiaodong.cn"
 #define URL "http://www.zongxiaodong.cn/receiver.php"
@@ -258,20 +382,54 @@ int main()
     char recv_buf[4096];
     int recv_num;
     unsigned char value[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
+    libusb_device_handle  *dev_handle;
+    unsigned short data_addr;
+    unsigned short data_length;
+    unsigned char data_buf[4096];
+    
+    dev_handle = telink_usb_open(0x248a, 0x5320);
+	if(dev_handle == NULL)
+	{
+		printf("open the usb dev failed!\n");
+		exit(1);
+	}
+	
+	data_addr = ResuBuf_GetAddr(dev_handle);
     
     sock_fd = host_connect(HOST_NAME,PORT);
     if(sock_fd < 0)
     {
     	exit(1);
 	}
-    recv_num = exchange(sock_fd,URL,HOST_NAME,"data",value,6,recv_buf,4096);
-    if(recv_num < 0)
-    {
-    	exit(1);
-	}else
+	
+	while(1)
 	{
-		printf("data recv:%s\n",recv_buf);
-		return 0;
+		//add code
+		data_length = Get_Device_Data(dev_handle, data_addr,data_buf,4096);
+		if(data_length > 1)
+		{
+			unsigned char data_type;
+			data_type = data_buf[0];
+			if(data_type == 0)//string
+			{
+				//add code
+				data_buf[data_length] = 0;
+				recv_num = exchange_str(sock_fd,URL,HOST_NAME,"data",data_buf+1,recv_buf,4096);
+			}
+			else//bytes
+			{
+				recv_num = exchange(sock_fd,URL,HOST_NAME,"data",data_buf+1,data_length-1,recv_buf,4096);
+			}
+    		
+    		if(recv_num < 0)
+    		{
+    			exit(1);
+			}else
+			{
+				printf("data recv:%s\n",recv_buf);
+				//return 0;
+			}
+		}
 	}
     #endif
 }
