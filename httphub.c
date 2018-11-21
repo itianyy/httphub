@@ -22,6 +22,10 @@
 
 int sock_fd;
 
+#define PORT 80
+#define HOST_NAME "zongxiaodong.cn"
+#define URL "http://www.zongxiaodong.cn/receiver.php"
+
 
 void process_info(int fd)
 {
@@ -367,9 +371,7 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 	}
 }
 
-#define PORT 80
-#define HOST_NAME "zongxiaodong.cn"
-#define URL "http://www.zongxiaodong.cn/receiver.php"
+
 
 void handle_pipe(int sig)
 {
