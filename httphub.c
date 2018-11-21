@@ -437,6 +437,16 @@ int main()
 			{
 				//add code
 				data_buf[data_length] = 0;
+				#if debug_mode
+				{
+					int i;
+					for(i=0;i<data_length+1;i++)
+					{
+						printf("%x ",data_buf[i]);
+					}
+					printf("\n");
+				}
+				#endif
 				recv_num = exchange_str(sock_fd,URL,HOST_NAME,"data",data_buf+1,recv_buf,4096);
 			}
 			else//bytes
