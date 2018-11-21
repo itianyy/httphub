@@ -447,7 +447,7 @@ int main()
 					printf("\n");
 				}
 				#endif
-				recv_num = exchange_str(sock_fd,URL,HOST_NAME,"data",data_buf+1,recv_buf,4096);
+				recv_num = exchange_str(sock_fd,URL,HOST_NAME,"thread_log",data_buf+1,recv_buf,4096);
 			}
 			else//bytes
 			{
