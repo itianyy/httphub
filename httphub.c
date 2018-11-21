@@ -356,6 +356,11 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 #define HOST_NAME "zongxiaodong.cn"
 #define URL "http://www.zongxiaodong.cn/receiver.php"
 
+void handle_pipe(int sig)
+{
+	printf("receive sigpipe signal\n");
+}
+
 int main()
 {
 	#if 0
@@ -405,6 +410,12 @@ int main()
     unsigned short data_addr;
     unsigned short data_length;
     unsigned char data_buf[4096];
+    struct sigaction action;
+    
+    action.sa_handler = handle_pipe;
+sigemptyset(&action.sa_mask);
+action.sa_flags = 0;
+sigaction(SIGPIPE, &action, NULL);
     
     dev_handle = telink_usb_open(0x248a, 0x5320);
 	if(dev_handle == NULL)
