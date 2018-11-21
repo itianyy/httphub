@@ -17,6 +17,8 @@
 //#define DEST_IP_ADDR "10.0.9.139"
 #define DEST_IP_BY_NAME "zongxiaodong.cn"
 
+#define debug_mode 1
+
 
 void process_info(int fd)
 {
@@ -319,11 +321,28 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 		{
 			unsigned short length;
 			telink_usb_r_mem(dev_handle,RESU_BUF_LENGTH , &length, 2);
+			#if debug_mode
+			printf("length = %d\n",length);
+			#endif
 			if(length > out_buf_len)
 			{
 				length = out_buf_len;
 			}
 			telink_usb_r_mem(dev_handle,addr , out, length);
+			#if debug_mode
+			{
+				int i;
+				for(i=0;i<length;i++)
+				{
+					printf("%x ",out[i]);
+				}
+				printf("\n");
+			}
+			#endif
+			
+			#if debug_mode
+			usleep(100000);//100ms
+			#endif
 			ResuBuf_reset(dev_handle);
 			return length;
 		}else
@@ -395,6 +414,10 @@ int main()
 	}
 	
 	data_addr = ResuBuf_GetAddr(dev_handle);
+	
+	#if debug_mode
+	printf("data_addr = %x\n",data_addr);
+	#endif
     
     sock_fd = host_connect(HOST_NAME,PORT);
     if(sock_fd < 0)
