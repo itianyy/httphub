@@ -5,6 +5,7 @@
 
 //
 #include <telink_usb.h>
+#include <signal.h>
 //
 
 #include <sys/types.h>
