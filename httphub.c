@@ -225,7 +225,7 @@ int exchange_str(int fd,char *url,char *host_name,char *key,char *temp,char *rec
     
     printf("begin send:\n");
     memset(str1,0,4096);
-    memset(temp,0,1024);
+    //memset(temp,0,1024);
     //strcat(str1, "POST http://www.zongxiaodong.cn/receiver.php HTTP/1.1\r\n");
     //
     strcat(str1, "POST ");
