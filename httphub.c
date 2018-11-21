@@ -456,7 +456,7 @@ int main()
     		
     		if(recv_num < 0)
     		{
-    			exit(1);
+    			//exit(1);
 			}else
 			{
 				printf("data recv:%s\n",recv_buf);
