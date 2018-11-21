@@ -20,6 +20,8 @@
 
 #define debug_mode 1
 
+int sock_fd;
+
 
 void process_info(int fd)
 {
@@ -152,7 +154,7 @@ void toStr(unsigned char *src,unsigned int len,char *dest)
     *p = 0;
 }
 
-int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int length,char *recv_buf,int recv_buf_len)
+int exchange(char *url,char *host_name,char *key,unsigned char *value,int length,char *recv_buf,int recv_buf_len)
 {
 	int send_num;
     char str1[4096];
@@ -191,12 +193,18 @@ int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int
     
     
     printf("%s\n",str1);
-    
-    send_num = send(fd, str1,strlen(str1),0);
+    l0:
+    send_num = send(sock_fd, str1,strlen(str1),0);
     if (send_num < 0)
     {
         perror("send error\n");
-        return -1;
+        //
+        do
+        {
+        sock_fd = host_connect(HOST_NAME,PORT);
+        }while(sock_fd < 0);
+        //
+        goto l0;
     }
     else
     {
@@ -204,7 +212,7 @@ int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int
     	printf("send successful\n");
     	printf("begin recv:\n");
     	
-    	int recv_num = recv(fd,recv_buf,recv_buf_len,0);
+    	int recv_num = recv(sock_fd,recv_buf,recv_buf_len,0);
     	if(recv_num < 0){
         	perror("recv error\n");
         	return -1;
@@ -217,7 +225,7 @@ int exchange(int fd,char *url,char *host_name,char *key,unsigned char *value,int
 }
 
 //begin
-int exchange_str(int fd,char *url,char *host_name,char *key,char *temp,char *recv_buf,int recv_buf_len)
+int exchange_str(char *url,char *host_name,char *key,char *temp,char *recv_buf,int recv_buf_len)
 {
 	int send_num;
     char str1[4096];
@@ -256,12 +264,18 @@ int exchange_str(int fd,char *url,char *host_name,char *key,char *temp,char *rec
     
     
     printf("%s\n",str1);
-    
-    send_num = send(fd, str1,strlen(str1),0);
+    l0:
+    send_num = send(sock_fd, str1,strlen(str1),0);
     if (send_num < 0)
     {
         perror("send error\n");
-        return -1;
+        //
+        do
+        {
+        sock_fd = host_connect(HOST_NAME,PORT);
+        }while(sock_fd < 0);
+        //
+        goto l0;
     }
     else
     {
@@ -269,7 +283,7 @@ int exchange_str(int fd,char *url,char *host_name,char *key,char *temp,char *rec
     	printf("send successful\n");
     	printf("begin recv:\n");
     	
-    	int recv_num = recv(fd,recv_buf,recv_buf_len,0);
+    	int recv_num = recv(sock_fd,recv_buf,recv_buf_len,0);
     	if(recv_num < 0){
         	perror("recv error\n");
         	return -1;
@@ -403,7 +417,7 @@ int main()
     }
     process_info(sock_fd);
     #else
-    int sock_fd;
+    
     char recv_buf[4096];
     int recv_num;
     unsigned char value[6] = {0xaa,0xbb,0xcc,0xdd,0xee,0xff};
@@ -459,11 +473,11 @@ sigaction(SIGPIPE, &action, NULL);
 					printf("\n");
 				}
 				#endif
-				recv_num = exchange_str(sock_fd,URL,HOST_NAME,"thread_log",data_buf+1,recv_buf,4096);
+				recv_num = exchange_str(URL,HOST_NAME,"thread_log",data_buf+1,recv_buf,4096);
 			}
 			else//bytes
 			{
-				recv_num = exchange(sock_fd,URL,HOST_NAME,"data",data_buf+1,data_length-1,recv_buf,4096);
+				recv_num = exchange(URL,HOST_NAME,"data",data_buf+1,data_length-1,recv_buf,4096);
 			}
     		
     		if(recv_num < 0)
