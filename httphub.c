@@ -361,7 +361,7 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 			#endif
 			
 			#if debug_mode
-			//usleep(100000);//100ms
+			usleep(100000);//100ms
 			#endif
 			ResuBuf_reset(dev_handle);
 			return length;
