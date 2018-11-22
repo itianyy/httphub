@@ -383,7 +383,67 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 	}
 }
 
+//begin
+int Get_Device_Data_new(libusb_device_handle  *dev_handle,unsigned char *out)
+{
+	int counter = 0;
+	unsigned char cmdbuf[32]={0};
+	unsigned char buff[256]={0};
+	unsigned char wbuf[4]={0};
+	unsigned char rbuf[4]={0};
+	unsigned char  wptr,rptr,mask,size;
+	unsigned long  adr;
+	
+	while(1)
+	{
+		telink_usb_r_mem(dev_handle,0x8000 , cmdbuf, 20);
+		wptr = cmdbuf[5];
+		rptr = cmdbuf[4];
 
+		size = cmdbuf[6];
+		mask = cmdbuf[7];
+		adr = cmdbuf[0xd];
+		adr = (adr << 8)|(cmdbuf[0xc]);
+		if(wptr!=rptr)
+		{
+			adr = adr + (rptr*size);
+			telink_usb_r_mem(dev_handle,adr , buff, size);
+			
+			rptr = (rptr+1)&mask;
+			wbuf[0] = rptr;
+			
+			telink_usb_w_mem(dev_handle,0x8004 , wbuf, 1);
+			#if 0
+			{
+				int i;
+				for(i=0;i<length;i++)
+				{
+					printf("%x ",out[i]);
+				}
+				printf("\n");
+			}
+			#endif
+			
+			return size;
+		}else
+		{
+			if(counter == 5)
+			{
+				out[0] = 2;
+				out[1] = 0x55;
+				out[2] = 0xaa;
+				return 3;
+			}
+			else
+			{
+				usleep(100000);//100ms
+				counter++;
+			}
+		}
+	}
+}
+
+//end
 
 void handle_pipe(int sig)
 {
@@ -468,6 +528,7 @@ sigaction(SIGPIPE, &action, NULL);
 	while(1)
 	{
 		//add code
+		#if 0
 		data_length = Get_Device_Data(dev_handle, data_addr,data_buf,4096);
 		if(data_length > 1)
 		{
@@ -507,6 +568,18 @@ sigaction(SIGPIPE, &action, NULL);
 				//return 0;
 			}
 		}
+		#else
+		data_length = Get_Device_Data_new(dev_handle,data_buf);
+		recv_num = exchange(URL,HOST_NAME,"data",data_buf,data_length,recv_buf,4096);
+		if(recv_num < 0)
+    		{
+    			//exit(1);
+			}else
+			{
+				printf("data recv:%s\n",recv_buf);
+				//return 0;
+			}
+		#endif
 	}
     #endif
 }
