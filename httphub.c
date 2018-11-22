@@ -334,6 +334,7 @@ int ResuBuf_isReady(libusb_device_handle  *dev_handle)
 
 int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsigned char *out,unsigned int out_buf_len)
 {
+	int counter = 0;
 	while(1)
 	{
 		if(ResuBuf_isReady(dev_handle))
@@ -360,13 +361,24 @@ int Get_Device_Data(libusb_device_handle  *dev_handle, unsigned short addr,unsig
 			#endif
 			
 			#if debug_mode
-			usleep(100000);//100ms
+			//usleep(100000);//100ms
 			#endif
 			ResuBuf_reset(dev_handle);
 			return length;
 		}else
 		{
-			usleep(100000);//100ms
+			if(counter == 10)
+			{
+				out[0] = 2;
+				out[1] = 0x55;
+				out[2] = 0xaa;
+				return 3;
+			}
+			else
+			{
+				usleep(100000);//100ms
+				counter++;
+			}
 		}
 	}
 }
@@ -477,9 +489,13 @@ sigaction(SIGPIPE, &action, NULL);
 				#endif
 				recv_num = exchange_str(URL,HOST_NAME,"thread_log",data_buf+1,recv_buf,4096);
 			}
-			else//bytes
+			else if(data_type == 1)//bytes
 			{
 				recv_num = exchange(URL,HOST_NAME,"data",data_buf+1,data_length-1,recv_buf,4096);
+			}
+			else if(data_type == 2)//keep alive
+			{
+				recv_num = exchange(URL,HOST_NAME,"keep_alive",data_buf+1,data_length-1,recv_buf,4096);
 			}
     		
     		if(recv_num < 0)
