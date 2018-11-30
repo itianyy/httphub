@@ -163,6 +163,8 @@ int exchange(char *url,char *host_name,char *key,unsigned char *value,int length
 	int send_num;
     char str1[4096];
     char temp[1024];
+    char *ptr = temp;
+    unsigned short payload_length;
     
     
     printf("begin send:\n");
@@ -182,7 +184,25 @@ int exchange(char *url,char *host_name,char *key,unsigned char *value,int length
     //
     //strcat(str1,"Content-Length: 15\r\n");
     //
-    toStr(value,length,temp);
+    //toStr(value,length,temp);
+    //begin
+        //timestamp
+        toStr(value,8,ptr);
+        ptr += strlen(temp);
+        //end
+        
+        //payload
+        payload_length = value[12];
+        payload_length <<= 8;
+        payload_length |= value[13];
+        if(payload_length > 0)
+        {
+        	*ptr = ',';
+        	ptr++;
+        	toStr(value+14,payload_length,ptr);
+		}
+        //end
+    //end
     sprintf(str1+strlen(str1),"Content-Length: %d\r\n",strlen(temp)+strlen(key)+1);
     //
     strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
@@ -407,7 +427,7 @@ int Get_Device_Data_new(libusb_device_handle  *dev_handle,unsigned char *out)
 		if(wptr!=rptr)
 		{
 			adr = adr + (rptr*size);
-			telink_usb_r_mem(dev_handle,adr , buff, size);
+			telink_usb_r_mem(dev_handle,adr , out, size);
 			
 			rptr = (rptr+1)&mask;
 			wbuf[0] = rptr;
@@ -427,16 +447,27 @@ int Get_Device_Data_new(libusb_device_handle  *dev_handle,unsigned char *out)
 			return size;
 		}else
 		{
-			if(counter == 5)
+			if(counter == 255)
 			{
-				out[0] = 2;
-				out[1] = 0x55;
-				out[2] = 0xaa;
-				return 3;
+				out[0] = 0;
+				out[1] = 0;
+				out[2] = 0;
+				out[3] = 0;
+				out[4] = 0;
+				out[5] = 0;
+				out[6] = 0;
+				out[7] = 0;
+				out[8] = 0;
+				out[9] = 0;
+				out[10] = 6;
+				out[11] = 1;
+				out[12] = 0;
+				out[13] = 0;
+				return 14;
 			}
 			else
 			{
-				usleep(100000);//100ms
+				//usleep(100000);//100ms
 				counter++;
 			}
 		}
@@ -570,8 +601,31 @@ sigaction(SIGPIPE, &action, NULL);
 		}
 		#else
 		data_length = Get_Device_Data_new(dev_handle,data_buf);
-		recv_num = exchange(URL,HOST_NAME,"data",data_buf,data_length,recv_buf,4096);
-		if(recv_num < 0)
+		if(data_length >= 14)
+		{
+			unsigned char proto_type;
+			unsigned char data_type;
+			proto_type = data_buf[10];
+			data_type = data_buf[11];
+			
+			if(proto_type == 1)//zigbee
+			{
+				if(data_type == 1)//stream
+				{
+					recv_num = exchange(URL,HOST_NAME,"zigbee_data",data_buf,data_length,recv_buf,4096);
+				}else//string
+				{
+					
+				}
+			}else if(proto_type == 6)//test
+			{
+				recv_num = exchange(URL,HOST_NAME,"test",data_buf,data_length,recv_buf,4096);
+			}else
+			{
+				
+			}
+			
+			if(recv_num < 0)
     		{
     			//exit(1);
 			}else
@@ -579,6 +633,9 @@ sigaction(SIGPIPE, &action, NULL);
 				printf("data recv:%s\n",recv_buf);
 				//return 0;
 			}
+		}
+		
+		
 		#endif
 	}
     #endif
