@@ -16,15 +16,15 @@
 #include <netdb.h> 
 #define DEST_PORT 80
 //#define DEST_IP_ADDR "10.0.9.139"
-#define DEST_IP_BY_NAME "zongxiaodong.cn"
+#define DEST_IP_BY_NAME "101.132.165.232"
 
 #define debug_mode 1
 
 int sock_fd;
 
 #define PORT 80
-#define HOST_NAME "zongxiaodong.cn"
-#define URL "http://www.zongxiaodong.cn/receiver.php"
+#define HOST_NAME "101.132.165.232"
+#define URL "http://101.132.165.232/receiver.php"
 
 
 void process_info(int fd)
@@ -37,8 +37,8 @@ void process_info(int fd)
     {
         printf("begin send\n");
         memset(str1,0,4096);
-        strcat(str1, "POST http://www.zongxiaodong.cn/receiver.php HTTP/1.1\r\n");
-        strcat(str1,"Host: zongxiaodong.cn\r\n");
+        strcat(str1, "POST http://101.132.165.232/receiver.php HTTP/1.1\r\n");
+        strcat(str1,"Host: 101.132.165.232\r\n");
         strcat(str1,"Content-Length: 15\r\n");
         strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
         strcat(str1,"\r\n");
