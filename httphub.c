@@ -19,12 +19,13 @@
 #define DEST_IP_BY_NAME "101.132.165.232"
 
 #define debug_mode 1
+#define http_recv 0
 
 int sock_fd;
 
 #define PORT 80
 #define HOST_NAME "101.132.165.232"
-#define URL "http://101.132.165.232/receiver.php"
+#define URL "http://101.132.165.232/test/receiver.php"
 
 
 void process_info(int fd)
@@ -37,7 +38,7 @@ void process_info(int fd)
     {
         printf("begin send\n");
         memset(str1,0,4096);
-        strcat(str1, "POST http://101.132.165.232/receiver.php HTTP/1.1\r\n");
+        strcat(str1, "POST http://101.132.165.232/test/receiver.php HTTP/1.1\r\n");
         strcat(str1,"Host: 101.132.165.232\r\n");
         strcat(str1,"Content-Length: 15\r\n");
         strcat(str1,"Content-Type: application/x-www-form-urlencoded\r\n");
@@ -158,7 +159,12 @@ void toStr(unsigned char *src,unsigned int len,char *dest)
     *p = 0;
 }
 
-int exchange(char *url,char *host_name,char *key,unsigned char *value,int length,char *recv_buf,int recv_buf_len)
+#if http_recv
+int 
+#else
+void
+#endif
+exchange(char *url,char *host_name,char *key,unsigned char *value,int length,char *recv_buf,int recv_buf_len)
 {
 	int send_num;
     char str1[4096];
@@ -234,6 +240,7 @@ int exchange(char *url,char *host_name,char *key,unsigned char *value,int length
     {
 
     	printf("send successful\n");
+    	#if http_recv
     	printf("begin recv:\n");
     	
     	int recv_num = recv(sock_fd,recv_buf,recv_buf_len,0);
@@ -244,12 +251,18 @@ int exchange(char *url,char *host_name,char *key,unsigned char *value,int length
             printf("recv successful\n");
             return recv_num;
         }
+        #endif
     }
     
 }
 
 //begin
-int exchange_str(char *url,char *host_name,char *key,char *temp,char *recv_buf,int recv_buf_len)
+#if http_recv
+int 
+#else
+void
+#endif
+exchange_str(char *url,char *host_name,char *key,char *temp,char *recv_buf,int recv_buf_len)
 {
 	int send_num;
     char str1[4096];
@@ -305,6 +318,7 @@ int exchange_str(char *url,char *host_name,char *key,char *temp,char *recv_buf,i
     {
 
     	printf("send successful\n");
+    	#if http_recv
     	printf("begin recv:\n");
     	
     	int recv_num = recv(sock_fd,recv_buf,recv_buf_len,0);
@@ -315,6 +329,7 @@ int exchange_str(char *url,char *host_name,char *key,char *temp,char *recv_buf,i
             printf("recv successful\n");
             return recv_num;
         }
+        #endif
     }
     
 }
@@ -612,19 +627,26 @@ sigaction(SIGPIPE, &action, NULL);
 			{
 				if(data_type == 1)//stream
 				{
-					recv_num = exchange(URL,HOST_NAME,"zigbee_data",data_buf,data_length,recv_buf,4096);
+					#if http_recv
+					recv_num = 
+					#endif
+					exchange(URL,HOST_NAME,"zigbee_data",data_buf,data_length,recv_buf,4096);
 				}else//string
 				{
 					
 				}
 			}else if(proto_type == 6)//test
 			{
-				recv_num = exchange(URL,HOST_NAME,"test",data_buf,data_length,recv_buf,4096);
+				#if http_recv
+				recv_num = 
+				#endif
+				exchange(URL,HOST_NAME,"test",data_buf,data_length,recv_buf,4096);
 			}else
 			{
 				
 			}
 			
+			#if http_recv
 			if(recv_num < 0)
     		{
     			//exit(1);
@@ -633,6 +655,7 @@ sigaction(SIGPIPE, &action, NULL);
 				printf("data recv:%s\n",recv_buf);
 				//return 0;
 			}
+			#endif
 		}
 		
 		
