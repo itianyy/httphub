@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-
+#include <curl/curl.h>
 //
 #include <telink_usb.h>
 #include <signal.h>
@@ -20,6 +20,7 @@
 
 #define debug_mode 1
 #define http_recv 0
+#define use_libcurl 1
 
 int sock_fd;
 
@@ -171,6 +172,7 @@ exchange(char *url,char *host_name,char *key,unsigned char *value,int length,cha
     char temp[1024];
     char *ptr = temp;
     unsigned short payload_length;
+    char curl_send_buf[1024];
     
     
     printf("begin send:\n");
@@ -218,11 +220,37 @@ exchange(char *url,char *host_name,char *key,unsigned char *value,int length,cha
     strcat(str1,key);
     strcat(str1,"=");
     strcat(str1,temp);
+    memset(curl_send_buf,0,1024);
+    strcat(curl_send_buf,key);
+    strcat(curl_send_buf,"=");
+    strcat(curl_send_buf,temp);
     //
     strcat(str1,"\r\n\r\n");
     
     
     printf("%s\n",str1);
+    #if use_libcurl
+    /* get a curl handle */ 
+  curl = curl_easy_init();
+  if(curl) {
+    /* First set the URL that is about to receive our POST. This URL can
+       just as well be a https:// URL if that is what should receive the
+       data. */ 
+    curl_easy_setopt(curl, CURLOPT_URL, "http://101.132.165.232/test/receiver.php");
+    /* Now specify the POST data */ 
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, curl_send_buf);
+ 
+    /* Perform the request, res will get the return code */ 
+    res = curl_easy_perform(curl);
+    /* Check for errors */ 
+    if(res != CURLE_OK)
+      fprintf(stderr, "curl_easy_perform() failed: %s\n",
+              curl_easy_strerror(res));
+ 
+    /* always cleanup */ 
+    curl_easy_cleanup(curl);
+  }
+    #else
     l0:
     send_num = send(sock_fd, str1,strlen(str1),0);
     if (send_num < 0)
@@ -253,7 +281,7 @@ exchange(char *url,char *host_name,char *key,unsigned char *value,int length,cha
         }
         #endif
     }
-    
+    #endif
 }
 
 //begin
@@ -546,11 +574,15 @@ int main()
     unsigned short data_length;
     unsigned char data_buf[4096];
     struct sigaction action;
+    CURL *curl;
+  CURLcode res;
     
     action.sa_handler = handle_pipe;
 sigemptyset(&action.sa_mask);
 action.sa_flags = 0;
 sigaction(SIGPIPE, &action, NULL);
+
+curl_global_init(CURL_GLOBAL_ALL);
     
     dev_handle = telink_usb_open(0x248a, 0x5320);
 	if(dev_handle == NULL)
@@ -662,5 +694,7 @@ sigaction(SIGPIPE, &action, NULL);
 		#endif
 	}
     #endif
+    
+    curl_global_cleanup();
 }
 
