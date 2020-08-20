@@ -6,7 +6,7 @@
 //
 #include <telink_usb.h>
 #include <signal.h>
-//
+//2020/8/20
 
 #include <sys/types.h>
 #include <sys/socket.h>
